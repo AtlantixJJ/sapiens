@@ -1,22 +1,23 @@
 #!/bin/bash
 
 cd ../../.. || exit
-SAPIENS_CHECKPOINT_ROOT=/home/${USER}/sapiens_lite_host
+SAPIENS_CHECKPOINT_ROOT=/home/jianjinx/data2/HHRGaussian-priv/thirdparty/sapiens/checkpoints
 
 MODE='torchscript' ## original. no optimizations (slow). full precision inference.
 # MODE='bfloat16' ## A100 gpus. faster inference at bfloat16
+# MODE='float16' ## V100 gpus. faster inference at float16 (no flash attn)
 
-SAPIENS_CHECKPOINT_ROOT=$SAPIENS_CHECKPOINT_ROOT/$MODE
+DATA_ROOT='/home/jianjinx/data2/HHRGaussian-priv/data/NeRSemble/data'
 
 #----------------------------set your input and output directories----------------------------------------------
-INPUT='../pose/demo/data/itw_videos/reel1'
-SEG_DIR="/home/${USER}/Desktop/sapiens/seg/Outputs/vis/itw_videos/reel1_seg/sapiens_1b"
-OUTPUT="/home/${USER}/Desktop/sapiens/seg/Outputs/vis/itw_videos/reel1_depth"
+INPUT=$DATA_ROOT/017/extra_sequences/EMO-1-shout+laugh/frame_00000/images-2fps
+SEG_DIR=$DATA_ROOT/017/extra_sequences/EMO-1-shout+laugh/frame_00000/seg-2fps
+OUTPUT=$DATA_ROOT/017/extra_sequences/EMO-1-shout+laugh/frame_00000/depth-2fps
 
 #--------------------------MODEL CARD---------------
 # MODEL_NAME='sapiens_0.3b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/depth/checkpoints/sapiens_0.3b/sapiens_0.3b_render_people_epoch_100_$MODE.pt2
 # MODEL_NAME='sapiens_0.6b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/depth/checkpoints/sapiens_0.6b/sapiens_0.6b_render_people_epoch_70_$MODE.pt2
-MODEL_NAME='sapiens_1b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/depth/checkpoints/sapiens_1b/sapiens_1b_render_people_epoch_88_$MODE.pt2
+MODEL_NAME='sapiens_1b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/sapiens_1b_render_people_epoch_88_$MODE.pt2
 # MODEL_NAME='sapiens_2b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/depth/checkpoints/sapiens_2b/sapiens_2b_render_people_epoch_25_$MODE.pt2
 
 OUTPUT=$OUTPUT/$MODEL_NAME
@@ -25,7 +26,7 @@ OUTPUT=$OUTPUT/$MODEL_NAME
 RUN_FILE='demo/vis_depth.py'
 
 # JOBS_PER_GPU=1; TOTAL_GPUS=8; VALID_GPU_IDS=(0 1 2 3 4 5 6 7)
-JOBS_PER_GPU=1; TOTAL_GPUS=1; VALID_GPU_IDS=(0)
+JOBS_PER_GPU=1; TOTAL_GPUS=1; VALID_GPU_IDS=(4)
 
 BATCH_SIZE=8
 

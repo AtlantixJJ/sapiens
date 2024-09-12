@@ -1,37 +1,37 @@
 #!/bin/bash
 
 cd ../../.. || exit
-SAPIENS_CHECKPOINT_ROOT=/uca/${USER}/sapiens_lite_host
+SAPIENS_CHECKPOINT_ROOT=/home/jianjinx/data2/HHRGaussian-priv/thirdparty/sapiens/checkpoints
 
 MODE='torchscript' ## original. no optimizations (slow). full precision inference.
 # MODE='bfloat16' ## A100 gpus. faster inference at bfloat16
+# MODE='float16' ## V100 gpus. faster inference at float16 (no flash attn)
 
-SAPIENS_CHECKPOINT_ROOT=$SAPIENS_CHECKPOINT_ROOT/$MODE
+DATA_ROOT='/home/jianjinx/data2/HHRGaussian-priv/data/NeRSemble/data'
 
 #----------------------------set your input and output directories----------------------------------------------
-INPUT='../pose/demo/data/itw_videos/reel1'
-SEG_DIR="/home/${USER}/Desktop/sapiens/seg/Outputs/vis/itw_videos/reel1_seg/sapiens_1b"
-OUTPUT="/home/${USER}/Desktop/sapiens/seg/Outputs/vis/itw_videos/reel1_normal"
+INPUT=$DATA_ROOT
+SEG_DIR=$DATA_ROOT
+OUTPUT=$DATA_ROOT
 
 #--------------------------MODEL CARD---------------
 # MODEL_NAME='sapiens_0.3b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/normal/checkpoints/sapiens_0.3b/sapiens_0.3b_normal_render_people_epoch_66_$MODE.pt2
 # MODEL_NAME='sapiens_0.6b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/normal/checkpoints/sapiens_0.6b/sapiens_0.6b_normal_render_people_epoch_200_$MODE.pt2
-MODEL_NAME='sapiens_1b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/normal/checkpoints/sapiens_1b/sapiens_1b_normal_render_people_epoch_115_$MODE.pt2
+MODEL_NAME='sapiens_1b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/sapiens_1b_normal_render_people_epoch_115_$MODE.pt2
 # MODEL_NAME='sapiens_2b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/normal/checkpoints/sapiens_2b/sapiens_2b_normal_render_people_epoch_70_$MODE.pt2
-
-OUTPUT=$OUTPUT/$MODEL_NAME
 
 ##-------------------------------------inference-------------------------------------
 RUN_FILE='demo/vis_normal.py'
 
 # JOBS_PER_GPU=1; TOTAL_GPUS=8; VALID_GPU_IDS=(0 1 2 3 4 5 6 7)
-JOBS_PER_GPU=1; TOTAL_GPUS=1; VALID_GPU_IDS=(0)
+JOBS_PER_GPU=1; TOTAL_GPUS=1; VALID_GPU_IDS=(4)
 
 BATCH_SIZE=8
 
 # Find all images and sort them, then write to a temporary text file
 IMAGE_LIST="${INPUT}/image_list.txt"
-find "${INPUT}" -type f \( -iname \*.jpg -o -iname \*.png \) | sort > "${IMAGE_LIST}"
+#already found by seg.sh
+#find "${INPUT}" -type f \( -iname \*images-2fps\*.jpg -o -iname \*images-2fps\*.png \) | sort > "${IMAGE_LIST}"
 
 # Check if image list was created successfully
 if [ ! -s "${IMAGE_LIST}" ]; then

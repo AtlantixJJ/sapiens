@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd ../../.. || exit
-SAPIENS_CHECKPOINT_ROOT=/home/${USER}/sapiens_lite_host
+SAPIENS_CHECKPOINT_ROOT=/home/jianjinx/data/HHRGaussian-priv/thirdparty/sapiens/checkpoints
 
 MODE='torchscript' ## original. no optimizations (slow). full precision inference.
 # MODE='bfloat16' ## A100 gpus. faster inference at bfloat16
@@ -9,13 +9,14 @@ MODE='torchscript' ## original. no optimizations (slow). full precision inferenc
 SAPIENS_CHECKPOINT_ROOT=$SAPIENS_CHECKPOINT_ROOT/$MODE
 
 #----------------------------set your input and output directories----------------------------------------------
+DATA_ROOT='/home/jianjinx/data/HHRGaussian-priv/data/PanoHeadDense'
 INPUT='../pose/demo/data/itw_videos/reel1'
 OUTPUT="/home/${USER}/Desktop/sapiens/pretrain/Outputs/vis/itw_videos/reel1_pretrain"
 
 #--------------------------MODEL CARD---------------
 # MODEL_NAME='sapiens_0.3b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/pretrain/checkpoints/sapiens_0.3b/sapiens_0.3b_epoch_1600_$MODE.pt2
 # MODEL_NAME='sapiens_0.6b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/pretrain/checkpoints/sapiens_0.6b/sapiens_0.6b_epoch_1600_$MODE.pt2
-MODEL_NAME='sapiens_1b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/pretrain/checkpoints/sapiens_1b/sapiens_1b_epoch_173_$MODE.pt2
+MODEL_NAME='sapiens_1b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/sapiens_1b_epoch_173_$MODE.pt2
 # MODEL_NAME='sapiens_2b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/pretrain/checkpoints/sapiens_2b/sapiens_2b_epoch_660_$MODE.pt2
 
 OUTPUT=$OUTPUT/$MODEL_NAME
@@ -31,7 +32,8 @@ BATCH_SIZE=8
 
 # Find all images and sort them, then write to a temporary text file
 IMAGE_LIST="${INPUT}/image_list.txt"
-find "${INPUT}" -type f \( -iname \*.jpg -o -iname \*.png \) | sort > "${IMAGE_LIST}"
+#find "${INPUT}" -type f \( -iname \*.jpg -o -iname \*.png \) | sort > "${IMAGE_LIST}"
+find "${INPUT}" -type f -path \*images\* \( -iname \*.jpg -o -iname \*.png \) | sort > "${IMAGE_LIST}"
 
 # Check if image list was created successfully
 if [ ! -s "${IMAGE_LIST}" ]; then

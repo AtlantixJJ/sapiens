@@ -1,36 +1,40 @@
 #!/bin/bash
 
 cd ../../.. || exit
-SAPIENS_CHECKPOINT_ROOT=/home/${USER}/sapiens_lite_host
+SAPIENS_CHECKPOINT_ROOT=/home/jianjinx/data2/HHRGaussian-priv/thirdparty/sapiens/checkpoints
 
 MODE='torchscript' ## original. no optimizations (slow). full precision inference.
 # MODE='bfloat16' ## A100 gpus. faster inference at bfloat16
+# MODE='float16' ## V100 gpus. faster inference at float16 (no flash attn)
 
-SAPIENS_CHECKPOINT_ROOT=$SAPIENS_CHECKPOINT_ROOT/$MODE
+DATA_ROOT='/home/jianjinx/data2/HHRGaussian-priv/data/NeRSemble/data'
+OUTPUT_ROOT='/home/jianjinx/data2/HHRGaussian-priv/data/NeRSemble/sapiens'
 
 #----------------------------set your input and output directories----------------------------------------------
-INPUT='../pose/demo/data/itw_videos/reel1'
-OUTPUT="/home/${USER}/Desktop/sapiens/seg/Outputs/vis/itw_videos/reel1_seg"
+INPUT=$DATA_ROOT #/017/extra_sequences/EMO-1-shout+laugh/
+OUTPUT=$OUTPUT_ROOT #/017/extra_sequences/EMO-1-shout+laugh/
 
 #--------------------------MODEL CARD---------------
 # MODEL_NAME='sapiens_0.3b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/seg/checkpoints/sapiens_0.3b/sapiens_0.3b_goliath_best_goliath_mIoU_7673_epoch_194_$MODE.pt2
-# MODEL_NAME='sapiens_0.6b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/seg/checkpoints/sapiens_0.6b/sapiens_0.6b_goliath_best_goliath_mIoU_7777_epoch_178_$MODE.pt2
-MODEL_NAME='sapiens_1b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/seg/checkpoints/sapiens_1b/sapiens_1b_goliath_best_goliath_mIoU_7994_epoch_151_$MODE.pt2
 
-OUTPUT=$OUTPUT/$MODEL_NAME
+#MODEL_NAME='sapiens_0.6b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/sapiens_0.6b_goliath_best_goliath_mIoU_7777_epoch_178_$MODE.pt2
+MODEL_NAME='sapiens_1b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/sapiens_1b_goliath_best_goliath_mIoU_7994_epoch_151_$MODE.pt2
+# MODEL_NAME='sapiens_2b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/seg/checkpoints/sapiens_2b/sapiens_2b_goliath_best_goliath_mIoU_8179_epoch_181_$MODE.pt2
+
 
 ##-------------------------------------inference-------------------------------------
 RUN_FILE='demo/vis_seg.py'
 
 ## number of inference jobs per gpu, total number of gpus and gpu ids
 # JOBS_PER_GPU=4; TOTAL_GPUS=8; VALID_GPU_IDS=(0 1 2 3 4 5 6 7)
-JOBS_PER_GPU=1; TOTAL_GPUS=1; VALID_GPU_IDS=(0)
+JOBS_PER_GPU=1; TOTAL_GPUS=1; VALID_GPU_IDS=(5)
 
 BATCH_SIZE=8
 
 # Find all images and sort them, then write to a temporary text file
 IMAGE_LIST="${INPUT}/image_list.txt"
-find "${INPUT}" -type f \( -iname \*.jpg -o -iname \*.png \) | sort > "${IMAGE_LIST}"
+find "${INPUT}" -type f -path \*images\* \( -iname \*.jpg -o -iname \*.png \) | sort > "${IMAGE_LIST}"
+#find "${INPUT}" -type f \( -iname \*.jpg -o -iname \*.png \) | sort > "${IMAGE_LIST}"
 
 # Check if image list was created successfully
 if [ ! -s "${IMAGE_LIST}" ]; then
@@ -72,7 +76,8 @@ for ((i=0; i<TOTAL_JOBS; i++)); do
     ${CHECKPOINT} \
     --input "${INPUT}/image_paths_$((i+1)).txt" \
     --batch-size="${BATCH_SIZE}" \
-    --output-root="${OUTPUT}" ## add & to process in background
+    --output-root="${OUTPUT}" \
+    --input-root="${INPUT}" ## add & to process in background
   # Allow a short delay between starting each job to reduce system load spikes
   sleep 1
 done
@@ -81,10 +86,10 @@ done
 wait
 
 # Remove the image list and temporary text files
-rm "${IMAGE_LIST}"
-for ((i=0; i<TOTAL_JOBS; i++)); do
-  rm "${INPUT}/image_paths_$((i+1)).txt"
-done
+#rm "${IMAGE_LIST}"
+#for ((i=0; i<TOTAL_JOBS; i++)); do
+#  rm "${INPUT}/image_paths_$((i+1)).txt"
+#done
 
 # Go back to the original script's directory
 cd -
