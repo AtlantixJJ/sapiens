@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd ../../.. || exit
-SAPIENS_CHECKPOINT_ROOT=/home/jianjinx/data2/HHRGaussian-priv/thirdparty/sapiens/checkpoints
+SAPIENS_CHECKPOINT_ROOT=/home/jianjinx/data2/sapiens/checkpoints
 
 MODE='torchscript' ## original. no optimizations (slow). full precision inference.
 # MODE='bfloat16' ## A100 gpus. faster inference at bfloat16
@@ -27,13 +27,13 @@ RUN_FILE='demo/vis_seg.py'
 
 ## number of inference jobs per gpu, total number of gpus and gpu ids
 # JOBS_PER_GPU=4; TOTAL_GPUS=8; VALID_GPU_IDS=(0 1 2 3 4 5 6 7)
-JOBS_PER_GPU=1; TOTAL_GPUS=1; VALID_GPU_IDS=(5)
+JOBS_PER_GPU=1; TOTAL_GPUS=1; VALID_GPU_IDS=(0)
 
 BATCH_SIZE=8
 
 # Find all images and sort them, then write to a temporary text file
 IMAGE_LIST="${INPUT}/image_list.txt"
-find "${INPUT}" -type f -path \*images\* \( -iname \*.jpg -o -iname \*.png \) | sort > "${IMAGE_LIST}"
+#find "${INPUT}" -type f -path \*images\* \( -iname \*.jpg -o -iname \*.png \) | sort > "${IMAGE_LIST}"
 #find "${INPUT}" -type f \( -iname \*.jpg -o -iname \*.png \) | sort > "${IMAGE_LIST}"
 
 # Check if image list was created successfully

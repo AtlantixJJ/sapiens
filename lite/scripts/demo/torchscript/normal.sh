@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd ../../.. || exit
-SAPIENS_CHECKPOINT_ROOT=/home/jianjinx/data2/HHRGaussian-priv/thirdparty/sapiens/checkpoints
+SAPIENS_CHECKPOINT_ROOT=/home/jianjinx/data2/sapiens/checkpoints
 
 MODE='torchscript' ## original. no optimizations (slow). full precision inference.
 # MODE='bfloat16' ## A100 gpus. faster inference at bfloat16
@@ -24,7 +24,7 @@ MODEL_NAME='sapiens_1b'; CHECKPOINT=$SAPIENS_CHECKPOINT_ROOT/sapiens_1b_normal_r
 RUN_FILE='demo/vis_normal.py'
 
 # JOBS_PER_GPU=1; TOTAL_GPUS=8; VALID_GPU_IDS=(0 1 2 3 4 5 6 7)
-JOBS_PER_GPU=1; TOTAL_GPUS=1; VALID_GPU_IDS=(4)
+JOBS_PER_GPU=1; TOTAL_GPUS=1; VALID_GPU_IDS=(0)
 
 BATCH_SIZE=8
 
@@ -32,7 +32,7 @@ BATCH_SIZE=8
 IMAGE_LIST="${INPUT}/image_list.txt"
 #already found by seg.sh
 #find "${INPUT}" -type f \( -iname \*images-2fps\*.jpg -o -iname \*images-2fps\*.png \) | sort > "${IMAGE_LIST}"
-
+echo "${IMAGE_LIST}"
 # Check if image list was created successfully
 if [ ! -s "${IMAGE_LIST}" ]; then
   echo "No images found. Check your input directory and permissions."

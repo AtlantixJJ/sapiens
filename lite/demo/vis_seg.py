@@ -13,7 +13,8 @@ from functools import partial
 from multiprocessing import cpu_count, Pool, Process
 from typing import Union
 
-import cv2
+#import cv2
+from PIL import Image
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -63,12 +64,7 @@ def img_save_and_viz(
     output_file = (
         output_path.replace(".jpg", ".png")
         .replace(".jpeg", ".png")
-        .replace(".png", ".npy")
-    )
-    output_seg_file = (
-        output_path.replace(".jpg", ".png")
-        .replace(".jpeg", ".png")
-        .replace(".png", "_seg.npy")
+        .replace(".png", "_seg.png")
     )
 
     image = image.data.numpy() ## bgr image
@@ -85,10 +81,12 @@ def img_save_and_viz(
 
     pred_sem_seg = pred_sem_seg.data[0].numpy()
 
-    mask = pred_sem_seg > 0
-    np.save(output_file, mask)
-    np.save(output_seg_file, pred_sem_seg)
+    #mask = pred_sem_seg > 0
+    #np.save(output_file, mask)
+    #np.save(output_seg_file, pred_sem_seg)
+    Image.fromarray(pred_sem_seg.astype(np.uint8)).save(output_file)
 
+    """
     num_classes = len(classes)
     sem_seg = pred_sem_seg
     ids = np.unique(sem_seg)[::-1]
@@ -107,6 +105,8 @@ def img_save_and_viz(
     vis_image = cv2.cvtColor(vis_image, cv2.COLOR_RGB2BGR)
     vis_image = np.concatenate([image, vis_image], axis=1)
     cv2.imwrite(output_path, vis_image)
+    """
+
 
 def load_model(checkpoint, use_torchscript=False):
     if use_torchscript:
@@ -118,6 +118,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("checkpoint", help="Checkpoint file")
     parser.add_argument("--input", help="Input image dir")
+    parser.add_argument("--input-root", help="Input root dir to be replaced in output paths")
     parser.add_argument(
         "--output_root", "--output-root", default=None, help="Path to output dir"
     )
@@ -189,24 +190,20 @@ def main():
             or image_name.endswith(".jpeg")
         ]
     elif os.path.isfile(input) and input.endswith(".txt"):
-        # If the input is a text file, read the paths from it and set input_dir to the directory of the first image
+        # If the input is a text file, read the paths from it
         with open(input, "r") as file:
             image_paths = [line.strip() for line in file if line.strip()]
-        image_names = [
-            os.path.basename(path) for path in image_paths
-        ]  # Extract base names for image processing
-        input_dir = (
-            os.path.dirname(image_paths[0]) if image_paths else ""
-        )  # Use the directory of the first image path
+        output_paths = [fpath.replace(args.input_root, args.output_root).replace(".jpg", ".png") for fpath in image_paths]
+
+        valid_indices = [idx for idx, output_path in enumerate(output_paths)
+            if not os.path.exists(output_path)]
+        image_paths = [image_paths[idx] for idx in valid_indices]
+        output_paths = [output_paths[idx] for idx in valid_indices]
     else:
         raise ValueError("Invalid input, must be a directory or a text file")
 
-    if len(image_names) == 0:
+    if len(image_paths) == 0:
         raise ValueError("No images found in the input directory")
-
-    # If left unspecified, create an output folder relative to this script.
-    if args.output_root is None:
-        args.output_root = os.path.join(input_dir, "output")
 
     if not os.path.exists(args.output_root):
         os.makedirs(args.output_root)
@@ -217,7 +214,7 @@ def main():
     n_batches = (len(image_names) + args.batch_size - 1) // args.batch_size
 
     inference_dataset = AdhocImageDataset(
-        [os.path.join(input_dir, img_name) for img_name in image_names],
+        image_paths,
         (input_shape[1], input_shape[2]),
         mean=[123.5, 116.5, 103.5],
         std=[58.5, 57.0, 57.5],
@@ -231,7 +228,7 @@ def main():
     total_results = []
     image_paths = []
     img_save_pool = WorkerPool(
-        img_save_and_viz, processes=max(min(args.batch_size, cpu_count()), 1)
+        img_save_and_viz, processes=1#max(min(args.batch_size, cpu_count()), 1)
     )
     for batch_idx, (batch_image_name, batch_orig_imgs, batch_imgs) in tqdm(
         enumerate(inference_dataloader), total=len(inference_dataloader)
@@ -244,7 +241,7 @@ def main():
             (
                 i,
                 r,
-                os.path.join(args.output_root, os.path.basename(img_name)),
+                img_name.replace(args.input_root, args.output_root),
                 GOLIATH_CLASSES,
                 GOLIATH_PALETTE,
                 args.title,
@@ -257,6 +254,7 @@ def main():
             )
         ]
         img_save_pool.run_async(args_list)
+        #img_save_and_viz(*args_list[0])
 
     img_save_pool.finish()
 
